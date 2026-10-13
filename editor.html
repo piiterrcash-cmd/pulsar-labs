@@ -24,8 +24,8 @@ body.editing iframe{border-color:#4c91ff}
 <header><div class="brand">PULSAR <span>LABS</span> · Editor</div><button id="editBtn" class="primary">Activar edición</button><button id="saveBtn">Exportar HTML</button><button id="resetBtn">Restablecer original</button></header>
 <main>
 <aside>
- <div class="section"><h2>Editor visual</h2><div class="hint">Carga tu web original y edita la vista previa. Este editor no cambia la página principal publicada.</div><div id="status" class="status">Cargando HTML original…</div></div>
- <div class="section"><h2>Cómo editar</h2><div class="hint">1. Activa la edición.<br>2. Haz clic en un texto para escribir.<br>3. Haz clic en una imagen para sustituirla por una de tu ordenador.<br>4. Exporta el HTML cuando termines.</div></div>
+ <div class="section"><h2>Editor visual</h2><div class="hint">Edita productos individualmente: selecciona una tarjeta para cambiar su nombre y precio. Después exporta el HTML.</div><div id="status" class="status">Cargando HTML original…</div></div>
+ <div class="section"><h2>Producto seleccionado</h2><label>Nombre<input id="productName" type="text" placeholder="Selecciona una tarjeta"></label><label>Precio (€)<input id="productPrice" type="text" inputmode="decimal" placeholder="0,00"></label><button id="applyProduct" class="primary">Aplicar al producto seleccionado</button><div class="hint">Haz clic en la tarjeta de un producto en la vista previa para seleccionarlo.</div></div><div class="section"><h2>Cómo editar</h2><div class="hint">1. Activa la edición.<br>2. Haz clic en un texto para escribir.<br>3. Haz clic en una imagen para sustituirla por una de tu ordenador.<br>4. Exporta el HTML cuando termines.</div></div>
  <div class="section"><h2>Ajustes de vista</h2><label>Fondo de página<input id="bgColor" type="color" value="#080b12"></label><button id="applyBg">Aplicar color al fondo</button><label>Buscar texto<input id="findText" type="text" placeholder="Texto que quieres localizar"></label><button id="findBtn">Buscar en la página</button></div>
  <div class="section"><h2>Guardar cambios</h2><button id="saveBtn2" class="primary">Descargar HTML editado</button><div class="hint">La descarga contiene la página editada. Después se puede subir a GitHub Pages cuando quieras.</div></div>
 </aside>
@@ -34,11 +34,11 @@ body.editing iframe{border-color:#4c91ff}
 <input id="imagePicker" type="file" accept="image/*" hidden>
 <script>
 const frame=document.getElementById('preview'), statusEl=document.getElementById('status'), editBtn=document.getElementById('editBtn'), picker=document.getElementById('imagePicker');
-let originalHTML='', editMode=false, chosenImage=null;
+let originalHTML='', editMode=false, chosenImage=null, selectedProduct=null;
 function status(s){statusEl.textContent=s}
 async function loadOriginal(){
  status('Cargando tu web publicada en la vista previa…');
- frame.src='./index.html?visual-editor-preview=1';
+ frame.src='./pulsar-labs-editada.html?visual-editor-preview=1';
  frame.onload=()=>{
    try{
      originalHTML='<!doctype html>\\n'+frame.contentDocument.documentElement.outerHTML;
@@ -89,8 +89,18 @@ function exportHTML(){
  const blob=new Blob([result],{type:'text/html;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');
  a.href=url;a.download='pulsar-labs-editada.html';a.click();setTimeout(()=>URL.revokeObjectURL(url),1500);status('HTML editado descargado. No se ha modificado la web publicada.')
 }
+document.getElementById('applyProduct').addEventListener('click',()=>{
+ if(!selectedProduct){status('Primero selecciona una tarjeta de producto.');return}
+ const name=document.getElementById('productName').value.trim();
+ const price=document.getElementById('productPrice').value.trim();
+ const title=selectedProduct.querySelector('h1,h2,h3,h4,.name,.title,[data-name]');
+ const priceEl=selectedProduct.querySelector('.price,[data-price],.product-price');
+ if(name){if(title)title.textContent=name;else status('No he encontrado el campo de nombre en esta tarjeta.')}
+ if(price && priceEl){const old=priceEl.textContent;priceEl.textContent=old.replace(/[0-9]+(?:[.,][0-9]{1,2})?/,price.replace('.',','));}
+ status('Cambios aplicados a esta tarjeta. Pulsa Exportar HTML para guardarlos.');
+});
 document.getElementById('saveBtn').addEventListener('click',exportHTML);document.getElementById('saveBtn2').addEventListener('click',exportHTML);
-document.getElementById('resetBtn').addEventListener('click',()=>{frame.src='./index.html?visual-editor-preview='+Date.now();frame.onload=()=>{installEditor();setEdit(false);status('Vista recargada desde la web publicada.')}});
+document.getElementById('resetBtn').addEventListener('click',()=>{frame.src='./pulsar-labs-editada.html?visual-editor-preview='+Date.now();frame.onload=()=>{installEditor();setEdit(false);status('Vista recargada desde la web publicada.')}});
 document.getElementById('reloadBtn').addEventListener('click',()=>{const current=frame.contentDocument?.documentElement?.outerHTML;if(current)frame.srcdoc='<!doctype html>'+current;frame.onload=installEditor});
 document.getElementById('applyBg').addEventListener('click',()=>{const d=frame.contentDocument;if(!d)return;let s=d.getElementById('editor-bg-style');if(!s){s=d.createElement('style');s.id='editor-bg-style';d.head.appendChild(s)}s.textContent='body{background:'+document.getElementById('bgColor').value+'!important}';status('Color de fondo aplicado en la vista previa.')});
 document.getElementById('findBtn').addEventListener('click',()=>{const q=document.getElementById('findText').value.trim();if(!q)return;const d=frame.contentDocument;const walker=d.createTreeWalker(d.body,NodeFilter.SHOW_TEXT);let n,found=false;while(n=walker.nextNode()){if(n.nodeValue.toLowerCase().includes(q.toLowerCase())){n.parentElement.scrollIntoView({behavior:'smooth',block:'center'});n.parentElement.style.outline='2px solid #4596ff';setTimeout(()=>n.parentElement.style.outline='',2500);found=true;break}}status(found?'Texto localizado en la vista previa.':'No se encontró ese texto.')});
