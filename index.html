@@ -1,3 +1,13 @@
 <!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Pulsar Labs</title><style>html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#080b12}#site{display:block;width:100%;height:100%;border:0}</style></head><body><iframe id="site" title="Pulsar Labs" src="./pulsar-labs-editada.html"></iframe><script>
-document.getElementById('site').addEventListener('load',function(){try{const d=this.contentDocument;if(!d)return;let s=d.getElementById('hide-detail-product-image');if(!s){s=d.createElement('style');s.id='hide-detail-product-image';s.textContent='.detail .shot{display:none!important}.detail{grid-template-columns:minmax(0,1fr)!important}';d.head.appendChild(s);}}catch(e){console.error(e)}});
+document.getElementById('site').addEventListener('load',function(){try{
+ const w=this.contentWindow,d=this.contentDocument;if(!d||!w)return;
+ let s=d.getElementById('hide-detail-product-image');
+ if(!s){s=d.createElement('style');s.id='hide-detail-product-image';s.textContent='.detail .shot{display:none!important}.detail{grid-template-columns:minmax(0,1fr)!important}.dlg-body .fam,.dlg-body .sub,.dlg-body .desc,.dlg-body .pyramid{display:none!important}';d.head.appendChild(s);}
+ w.openDetail=function(item){
+   const dialog=d.querySelector('#dlgDetail');
+   if(!dialog)return;
+   dialog.innerHTML='<div class="dlg-head"><h2>'+w.esc(item.name)+'</h2><button class="icon-btn" data-close aria-label="Cerrar">'+w.ICON.x+'</button></div><div class="dlg-body"><div class="detail" style="--c:'+w.famColor(item.family)+'"><div class="product-detail-simple"><h3>'+w.esc(item.name)+'</h3><div class="big-price">'+w.eur(item.price)+'</div><div class="buy-detail">'+w.buyButtons(item)+'</div></div></div></div>';
+   dialog.showModal();
+ };
+}catch(e){console.error(e)}});
 </script></body></html>
