@@ -6,7 +6,7 @@ document.getElementById('site').addEventListener('load',function(){try{
  w.openDetail=function(item){
    const dialog=d.querySelector('#dlgDetail');
    if(!dialog)return;
-   dialog.innerHTML='<div class="dlg-head"><h2>'+w.esc(item.name)+'</h2><button class="icon-btn" data-close aria-label="Cerrar">×</button></div><div class="dlg-body"><div class="detail" style="--c:'+w.famColor(item.family)+'"><div class="product-detail-simple"><h3>'+w.esc(item.name)+'</h3><div class="big-price">'+w.eur(item.price)+'</div><div class="buy-detail">'+w.buyButtons(item)+'</div></div></div></div>';
+   dialog.innerHTML='<div class="dlg-head"><h2>'+w.esc(item.name)+'</h2><button class="icon-btn" data-close aria-label="Cerrar">×</button></div><div class="dlg-body"><div class="detail" style="--c:'+w.famColor(item.family)+'"><div class="product-detail-simple"><div class="big-price">'+w.eur(item.price)+'</div><div class="buy-detail">'+w.buyButtons(item)+'</div></div></div></div>';
    dialog.showModal();
  };
 }catch(e){console.error(e)}});
