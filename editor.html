@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Editor visual · Pulsar Labs</title>
+<style>
+:root{color-scheme:dark;--bg:#080b12;--panel:#111827;--line:#283244;--text:#f3f6fb;--muted:#9aa7bb;--accent:#69a7ff}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:14px/1.45 system-ui,-apple-system,sans-serif}
+header{position:sticky;top:0;z-index:10;background:#0b1019f2;border-bottom:1px solid var(--line);padding:12px 16px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.brand{font-weight:800;font-size:16px;margin-right:auto}.brand span{color:var(--accent)}button,.filebtn,select,input[type=color]{border:1px solid #354258;background:#182235;color:#fff;border-radius:9px;padding:9px 12px;font:inherit;cursor:pointer}button.primary{background:#3478df;border-color:#3478df}button:disabled{opacity:.5;cursor:wait}
+main{display:grid;grid-template-columns:270px minmax(0,1fr);min-height:calc(100vh - 60px)}
+aside{padding:16px;border-right:1px solid var(--line);background:#0c111a;display:flex;flex-direction:column;gap:14px}
+h2{font-size:14px;margin:0 0 5px}.hint{color:var(--muted);font-size:12px}.section{padding-bottom:13px;border-bottom:1px solid var(--line);display:grid;gap:9px}
+label{display:grid;gap:6px;font-size:12px;color:#c8d2e1}input[type=text],input[type=url]{width:100%;padding:9px;border-radius:8px;border:1px solid #354258;background:#0b1019;color:white}
+.stage{padding:16px;min-width:0}.stagebar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px}.stagebar strong{margin-right:auto}
+iframe{width:100%;height:calc(100vh - 130px);min-height:600px;background:#fff;border:1px solid var(--line);border-radius:12px}
+.status{padding:9px 10px;border:1px solid var(--line);border-radius:9px;color:#c7d4e6;background:#101827;font-size:12px}
+body.editing iframe{border-color:#4c91ff}
+@media(max-width:760px){main{grid-template-columns:1fr}aside{border-right:0;border-bottom:1px solid var(--line)}iframe{height:70vh;min-height:500px}}
+</style>
+</head>
+<body>
+<header><div class="brand">PULSAR <span>LABS</span> · Editor</div><button id="editBtn" class="primary">Activar edición</button><button id="saveBtn">Exportar HTML</button><button id="resetBtn">Restablecer original</button></header>
+<main>
+<aside>
+ <div class="section"><h2>Editor visual</h2><div class="hint">Carga tu web original y edita la vista previa. Este editor no cambia la página principal publicada.</div><div id="status" class="status">Cargando HTML original…</div></div>
+ <div class="section"><h2>Cómo editar</h2><div class="hint">1. Activa la edición.<br>2. Haz clic en un texto para escribir.<br>3. Haz clic en una imagen para sustituirla por una de tu ordenador.<br>4. Exporta el HTML cuando termines.</div></div>
+ <div class="section"><h2>Ajustes de vista</h2><label>Fondo de página<input id="bgColor" type="color" value="#080b12"></label><button id="applyBg">Aplicar color al fondo</button><label>Buscar texto<input id="findText" type="text" placeholder="Texto que quieres localizar"></label><button id="findBtn">Buscar en la página</button></div>
+ <div class="section"><h2>Guardar cambios</h2><button id="saveBtn2" class="primary">Descargar HTML editado</button><div class="hint">La descarga contiene la página editada. Después se puede subir a GitHub Pages cuando quieras.</div></div>
+</aside>
+<section class="stage"><div class="stagebar"><strong>Vista previa de tu tienda</strong><span class="hint">Edición local</span><button id="reloadBtn">Recargar vista</button></div><iframe id="preview" title="Vista previa de Pulsar Labs"></iframe></section>
+</main>
+<input id="imagePicker" type="file" accept="image/*" hidden>
+<script>
+const frame=document.getElementById('preview'), statusEl=document.getElementById('status'), editBtn=document.getElementById('editBtn'), picker=document.getElementById('imagePicker');
+let originalHTML='', editMode=false, chosenImage=null;
+function status(s){statusEl.textContent=s}
+async function loadOriginal(){
+ status('Recuperando el HTML original…');
+ try{
+   const res=await fetch('./index-original.html',{cache:'no-store'});
+   if(!res.ok) throw new Error('HTTP '+res.status);
+   originalHTML=await res.text();
+   frame.srcdoc=originalHTML;
+   frame.onload=()=>{installEditor();status('Web original cargada. Activa la edición para modificarla.')};
+ }catch(e){status('No se pudo cargar automáticamente. Comprueba que index-original.html está publicado en GitHub Pages.');console.error(e)}
+}
+function installEditor(){
+ try{
+  const d=frame.contentDocument;
+  if(!d)return;
+  d.addEventListener('click',function(ev){
+   if(!editMode)return;
+   const target=ev.target;
+   if(target.closest('script,style,button,input,textarea,select,option,a'))return;
+   if(target.tagName==='IMG'){
+    ev.preventDefault();ev.stopPropagation();chosenImage=target;picker.click();return;
+   }
+   let el=target;
+   while(el&&el!==d.body&&!isEditable(el))el=el.parentElement;
+   if(el&&el!==d.body){ev.preventDefault();ev.stopPropagation();el.contentEditable='true';el.focus();status('Edita el texto directamente. Pulsa fuera para terminar.')}
+  },true);
+  d.addEventListener('input',()=>{if(editMode)status('Cambios sin exportar.')});
+  d.addEventListener('mouseover',function(ev){
+   if(!editMode)return;
+   const el=ev.target;
+   if(el&&el.tagName==='IMG')el.style.outline='2px dashed #4596ff';
+  });
+  d.addEventListener('mouseout',function(ev){if(ev.target&&ev.target.tagName==='IMG')ev.target.style.outline=''});
+ }catch(e){status('Vista cargada, pero el editor no pudo activarse en esta página.')}
+}
+function isEditable(el){return el&&['H1','H2','H3','H4','P','SPAN','DIV','LI','SMALL','STRONG','EM','LABEL'].includes(el.tagName)&&el.innerText?.trim().length>0&&!el.querySelector('input,button,select,textarea')}
+function setEdit(on){editMode=on;document.body.classList.toggle('editing',on);editBtn.textContent=on?'Terminar edición':'Activar edición';editBtn.classList.toggle('primary',!on);status(on?'Edición activa: haz clic en textos o imágenes.':'Edición pausada. Exporta para guardar tus cambios.')}
+editBtn.addEventListener('click',()=>setEdit(!editMode));
+picker.addEventListener('change',()=>{
+ const file=picker.files&&picker.files[0];if(!file||!chosenImage)return;
+ const reader=new FileReader();reader.onload=()=>{chosenImage.src=reader.result;chosenImage.removeAttribute('srcset');chosenImage.dataset.editorEmbedded='true';status('Imagen sustituida. Exporta el HTML para conservarla.');chosenImage=null;picker.value=''};
+ reader.readAsDataURL(file)
+});
+function exportHTML(){
+ const d=frame.contentDocument;if(!d){status('No hay una página cargada');return}
+ d.querySelectorAll('[contenteditable]').forEach(el=>el.removeAttribute('contenteditable'));
+ d.querySelectorAll('[style]').forEach(el=>{if(!el.getAttribute('style')?.trim())el.removeAttribute('style')});
+ const result='<!doctype html>\n'+d.documentElement.outerHTML;
+ const blob=new Blob([result],{type:'text/html;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');
+ a.href=url;a.download='pulsar-labs-editada.html';a.click();setTimeout(()=>URL.revokeObjectURL(url),1500);status('HTML editado descargado. No se ha modificado la web publicada.')
+}
+document.getElementById('saveBtn').addEventListener('click',exportHTML);document.getElementById('saveBtn2').addEventListener('click',exportHTML);
+document.getElementById('resetBtn').addEventListener('click',()=>{if(originalHTML){frame.srcdoc=originalHTML;frame.onload=()=>{installEditor();setEdit(false);status('Vista restablecida al HTML original.')}}});
+document.getElementById('reloadBtn').addEventListener('click',()=>{const current=frame.contentDocument?.documentElement?.outerHTML;if(current)frame.srcdoc='<!doctype html>'+current;frame.onload=installEditor});
+document.getElementById('applyBg').addEventListener('click',()=>{const d=frame.contentDocument;if(!d)return;let s=d.getElementById('editor-bg-style');if(!s){s=d.createElement('style');s.id='editor-bg-style';d.head.appendChild(s)}s.textContent='body{background:'+document.getElementById('bgColor').value+'!important}';status('Color de fondo aplicado en la vista previa.')});
+document.getElementById('findBtn').addEventListener('click',()=>{const q=document.getElementById('findText').value.trim();if(!q)return;const d=frame.contentDocument;const walker=d.createTreeWalker(d.body,NodeFilter.SHOW_TEXT);let n,found=false;while(n=walker.nextNode()){if(n.nodeValue.toLowerCase().includes(q.toLowerCase())){n.parentElement.scrollIntoView({behavior:'smooth',block:'center'});n.parentElement.style.outline='2px solid #4596ff';setTimeout(()=>n.parentElement.style.outline='',2500);found=true;break}}status(found?'Texto localizado en la vista previa.':'No se encontró ese texto.')});
+loadOriginal();
+</script>
+</body></html>
