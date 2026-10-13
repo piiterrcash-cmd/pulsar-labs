@@ -4,33 +4,55 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Pulsar Labs</title>
-<style>
-html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#080b12}
-#site{display:block;width:100%;height:100%;border:0}
-</style>
+<style>html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#080b12}#site{display:block;width:100%;height:100%;border:0}</style>
 </head>
 <body>
 <iframe id="site" title="Pulsar Labs" src="./pulsar-labs-editada.html"></iframe>
 <script>
 const frame=document.getElementById('site');
-function applyChanges(){
-  try{
-    const doc=frame.contentDocument;
-    if(!doc) return;
-    if(!doc.getElementById('pulsar-fix-style')){
-      const style=doc.createElement('style');
-      style.id='pulsar-fix-style';
-      style.textContent='.dlg-body .detail .shot{display:none!important}';
-      doc.head.appendChild(style);
-    }
-    doc.querySelectorAll('[data-id="ej-pulso-citrico"]').forEach(el=>el.remove());
-    const observer=new MutationObserver(()=>{
-      doc.querySelectorAll('[data-id="ej-pulso-citrico"]').forEach(el=>el.remove());
-    });
-    observer.observe(doc.body,{childList:true,subtree:true});
-  }catch(e){}
+function setup(){
+ try{
+  const d=frame.contentDocument;
+  if(!d||!d.body)return;
+  if(!d.getElementById('pulsar-name-fix')){
+   const style=d.createElement('style');
+   style.id='pulsar-name-fix';
+   style.textContent='.dlg-body .detail .shot{display:none!important}';
+   d.head.appendChild(style);
+  }
+  const names=new Map();
+  d.querySelectorAll('.card[data-id]').forEach(card=>{
+   const title=card.querySelector('.name');
+   if(title)names.set(card.getAttribute('data-id'),title.textContent.trim());
+  });
+  let lastId=null;
+  d.addEventListener('click',e=>{
+   const card=e.target.closest('.card[data-id]');
+   if(card)lastId=card.getAttribute('data-id');
+   const add=e.target.closest('[data-cart-add]');
+   if(add)lastId=add.getAttribute('data-cart-add');
+   if(lastId){
+    [0,30,100,250].forEach(delay=>setTimeout(()=>{
+     const modal=d.querySelector('.dlg-body, .modal, [role="dialog"]');
+     if(!modal)return;
+     const wanted=names.get(lastId);
+     if(!wanted)return;
+     const heading=modal.querySelector('h3, h2, .name');
+     if(heading)heading.textContent=wanted;
+    },delay));
+   }
+  },true);
+  const observer=new MutationObserver(()=>{
+   if(!lastId)return;
+   const modal=d.querySelector('.dlg-body, .modal, [role="dialog"]');
+   const heading=modal&&modal.querySelector('h3, h2, .name');
+   const wanted=names.get(lastId);
+   if(heading&&wanted&&heading.textContent.trim()!==wanted)heading.textContent=wanted;
+  });
+  observer.observe(d.body,{childList:true,subtree:true});
+ }catch(e){}
 }
-frame.addEventListener('load',applyChanges);
+frame.addEventListener('load',setup);
 </script>
 </body>
 </html>
