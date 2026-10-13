@@ -1,16 +1,10 @@
 <!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Pulsar Labs</title><style>html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#080b12}#site{display:block;width:100%;height:100%;border:0}</style></head><body><iframe id="site" title="Pulsar Labs" src="./pulsar-labs-editada.html"></iframe><script>
 document.getElementById('site').addEventListener('load',function(){try{
- const w=this.contentWindow,d=this.contentDocument;if(!d||!w)return;
- const s=d.createElement('style');s.id='simple-product-detail';s.textContent='.detail .shot{display:none!important}.detail{grid-template-columns:minmax(0,1fr)!important}.product-detail-simple{padding:8px 0}.product-detail-simple h3{margin:0 0 16px}.product-detail-simple .big-price{font-size:26px;margin:0 0 18px}';d.head.appendChild(s);
+ const d=this.contentDocument;if(!d)return;
+ const s=d.createElement('style');s.id='disable-product-click';s.textContent='.card{pointer-events:none!important;cursor:default!important}.card button,.card [data-cart-add],.card a{pointer-events:auto!important;cursor:pointer!important}';d.head.appendChild(s);
  d.addEventListener('click',function(e){
    const card=e.target.closest('.card');
-   if(!card || e.target.closest('button,a,[data-cart-add]'))return;
-   const item=typeof w.byId==='function'?w.byId(card.dataset.id):null;
-   if(!item)return;
-   e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();
-   const dialog=d.querySelector('#dlgDetail');if(!dialog)return;
-   dialog.innerHTML='<div class="dlg-head"><h2>'+w.esc(item.name)+'</h2><button class="icon-btn" data-close aria-label="Cerrar">×</button></div><div class="dlg-body"><div class="detail"><div class="product-detail-simple"><div class="big-price">'+w.eur(item.price)+'</div><div class="buy-detail">'+w.buyButtons(item)+'</div></div></div></div>';
-   dialog.showModal();
+   if(card && !e.target.closest('button,[data-cart-add],a')){e.preventDefault();e.stopPropagation();}
  },true);
-}catch(e){console.error('No se pudo ajustar el detalle del producto',e)}});
+}catch(e){console.error(e)}});
 </script></body></html>
