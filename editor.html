@@ -38,10 +38,10 @@ let originalHTML='', editMode=false, chosenImage=null, selectedProduct=null;
 function status(s){statusEl.textContent=s}
 async function loadOriginal(){
  status('Cargando tu web publicada en la vista previa…');
- frame.src='./pulsar-labs-editada.html?visual-editor-preview=1';
+ frame.src='./index.html?visual-editor-preview=1';
  frame.onload=()=>{
    try{
-     originalHTML='<!doctype html>\\n'+frame.contentDocument.documentElement.outerHTML;
+     originalHTML='<!doctype html>\\n'+siteDoc().documentElement.outerHTML;
      installEditor();
      status('Web cargada. Activa la edición para modificarla.');
    }catch(e){
@@ -82,7 +82,7 @@ picker.addEventListener('change',()=>{
  reader.readAsDataURL(file)
 });
 function exportHTML(){
- const d=frame.contentDocument;if(!d){status('No hay una página cargada');return}
+ const d=siteDoc();if(!d){status('No hay una página cargada');return}
  d.querySelectorAll('[contenteditable]').forEach(el=>el.removeAttribute('contenteditable'));
  d.querySelectorAll('[style]').forEach(el=>{if(!el.getAttribute('style')?.trim())el.removeAttribute('style')});
  const result='<!doctype html>\n'+d.documentElement.outerHTML;
@@ -100,10 +100,10 @@ document.getElementById('applyProduct').addEventListener('click',()=>{
  status('Cambios aplicados a esta tarjeta. Pulsa Exportar HTML para guardarlos.');
 });
 document.getElementById('saveBtn').addEventListener('click',exportHTML);document.getElementById('saveBtn2').addEventListener('click',exportHTML);
-document.getElementById('resetBtn').addEventListener('click',()=>{frame.src='./pulsar-labs-editada.html?visual-editor-preview='+Date.now();frame.onload=()=>{installEditor();setEdit(false);status('Vista recargada desde la web publicada.')}});
-document.getElementById('reloadBtn').addEventListener('click',()=>{const current=frame.contentDocument?.documentElement?.outerHTML;if(current)frame.srcdoc='<!doctype html>'+current;frame.onload=installEditor});
-document.getElementById('applyBg').addEventListener('click',()=>{const d=frame.contentDocument;if(!d)return;let s=d.getElementById('editor-bg-style');if(!s){s=d.createElement('style');s.id='editor-bg-style';d.head.appendChild(s)}s.textContent='body{background:'+document.getElementById('bgColor').value+'!important}';status('Color de fondo aplicado en la vista previa.')});
-document.getElementById('findBtn').addEventListener('click',()=>{const q=document.getElementById('findText').value.trim();if(!q)return;const d=frame.contentDocument;const walker=d.createTreeWalker(d.body,NodeFilter.SHOW_TEXT);let n,found=false;while(n=walker.nextNode()){if(n.nodeValue.toLowerCase().includes(q.toLowerCase())){n.parentElement.scrollIntoView({behavior:'smooth',block:'center'});n.parentElement.style.outline='2px solid #4596ff';setTimeout(()=>n.parentElement.style.outline='',2500);found=true;break}}status(found?'Texto localizado en la vista previa.':'No se encontró ese texto.')});
+document.getElementById('resetBtn').addEventListener('click',()=>{frame.src='./index.html?visual-editor-preview='+Date.now();frame.onload=()=>{installEditor();setEdit(false);status('Vista recargada desde la web publicada.')}});
+document.getElementById('reloadBtn').addEventListener('click',()=>{const current=siteDoc()?.documentElement?.outerHTML;if(current)frame.srcdoc='<!doctype html>'+current;frame.onload=installEditor});
+document.getElementById('applyBg').addEventListener('click',()=>{const d=siteDoc();if(!d)return;let s=d.getElementById('editor-bg-style');if(!s){s=d.createElement('style');s.id='editor-bg-style';d.head.appendChild(s)}s.textContent='body{background:'+document.getElementById('bgColor').value+'!important}';status('Color de fondo aplicado en la vista previa.')});
+document.getElementById('findBtn').addEventListener('click',()=>{const q=document.getElementById('findText').value.trim();if(!q)return;const d=siteDoc();const walker=d.createTreeWalker(d.body,NodeFilter.SHOW_TEXT);let n,found=false;while(n=walker.nextNode()){if(n.nodeValue.toLowerCase().includes(q.toLowerCase())){n.parentElement.scrollIntoView({behavior:'smooth',block:'center'});n.parentElement.style.outline='2px solid #4596ff';setTimeout(()=>n.parentElement.style.outline='',2500);found=true;break}}status(found?'Texto localizado en la vista previa.':'No se encontró ese texto.')});
 loadOriginal();
 </script>
 </body></html>
