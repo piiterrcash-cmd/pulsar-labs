@@ -220,7 +220,7 @@ dialog::backdrop{background:rgba(2,3,8,.72);backdrop-filter:blur(3px)}
   <section class="wrap" id="catalogo">
     <div class="tools">
       <label class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>
-        <input id="q" type="search" placeholder="Buscar péptidos (RETRA, BPC-157, GH…) " aria-label="Buscar"></label>
+        <input id="q" type="search" placeholder="Buscar péptidos (RETRA, BPC-157, GH…)" aria-label="Buscar"></label>
       <select id="sort" aria-label="Ordenar">
         <option value="new">Más nuevos</option>
         <option value="asc">Precio: menor a mayor</option>
@@ -792,7 +792,7 @@ document.addEventListener("submit", e => {
     const message=[
       "PULSAR LABS — NUEVO PEDIDO","",
       "PRODUCTOS",
-      ...rows.map(({item,qty})=>"- "+item.name+(item.ml?" ("+item.ml+" ml)":"")+" x "+qty+" — "+money(Number(item.price)*qty)),
+      ...rows.map(({item,qty})=>"- "+item.name+(item.strength?" ("+item.strength+")":item.ml?" ("+item.ml+" ml)":"")+" x "+qty+" — "+money(Number(item.price)*qty)),
       "",
       "DATOS DE ENVÍO Y CONTACTO",
       "Nombre y apellidos: "+data.nombre,
