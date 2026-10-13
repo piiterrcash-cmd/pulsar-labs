@@ -54,12 +54,21 @@ function installEditor(){
   const d=frame.contentDocument;
   if(!d)return;
   d.addEventListener('click',function(ev){
-   if(!editMode)return;
    const target=ev.target;
-   if(target.closest('script,style,button,input,textarea,select,option,a'))return;
-   if(target.tagName==='IMG'){
-    ev.preventDefault();ev.stopPropagation();chosenImage=target;picker.click();return;
+   const card=target.closest('article.card, .card[data-id]');
+   if(card && !target.closest('button,[data-cart-add],a,input,select,textarea')){
+     selectedProduct=card;
+     const title=card.querySelector('h1,h2,h3,h4,.name,.title,[data-name]');
+     const price=card.querySelector('.price,[data-price],.product-price');
+     document.getElementById('productName').value=(title||card).innerText.trim().split('\\n')[0];
+     document.getElementById('productPrice').value=price?price.innerText.replace(/[^0-9,.-]/g,'').trim():'';
+     card.style.outline='2px solid #4596ff';
+     status('Producto seleccionado. Cambia nombre o precio en el panel.');
+     ev.preventDefault();ev.stopPropagation();ev.stopImmediatePropagation();return;
    }
+   if(!editMode)return;
+   if(target.closest('script,style,button,input,textarea,select,option,a'))return;
+   if(target.tagName==='IMG'){ev.preventDefault();ev.stopPropagation();chosenImage=target;picker.click();return;}
    let el=target;
    while(el&&el!==d.body&&!isEditable(el))el=el.parentElement;
    if(el&&el!==d.body){ev.preventDefault();ev.stopPropagation();el.contentEditable='true';el.focus();status('Edita el texto directamente. Pulsa fuera para terminar.')}
