@@ -105,6 +105,21 @@ button,input,select,textarea{font:inherit;color:inherit}
 .empty h3{font-family:var(--display);font-weight:400;font-size:16px;color:var(--fg);margin:0 0 8px}
 .notice{font-size:13px;color:var(--muted);border:1px solid var(--line);border-radius:10px;padding:10px 14px;margin-bottom:18px}
 
+/* Formulario de pedido */
+.checkout-form{display:grid;gap:14px}
+.checkout-product{display:flex;justify-content:space-between;gap:14px;align-items:center;padding:14px;background:var(--surface-2);border:1px solid var(--line);border-radius:10px}
+.checkout-product strong{display:block}.checkout-product small{color:var(--muted)}
+.checkout-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.checkout-field{display:grid;gap:6px}.checkout-field.full{grid-column:1/-1}
+.checkout-field label{font-size:11px;font-weight:700;letter-spacing:.07em;color:var(--muted)}
+.checkout-field input,.checkout-field textarea{width:100%;min-width:0;padding:11px 12px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--fg)}
+.checkout-field textarea{min-height:78px;resize:vertical}
+.checkout-qty{display:flex;align-items:center;gap:10px}.checkout-qty input{width:76px;padding:8px;background:var(--bg);border:1px solid var(--line);border-radius:8px;color:var(--fg)}
+.checkout-summary{border-top:1px solid var(--line);padding-top:12px}.checkout-summary .fila{display:flex;justify-content:space-between;gap:12px;margin:10px 0}.checkout-summary .fila span{color:var(--muted)}
+.checkout-summary .fila.total{border-top:1px solid var(--line);padding-top:12px;font-size:18px}.checkout-summary .fila.total strong{color:var(--blue-hi)}
+.checkout-help{font-size:12px;color:var(--muted);margin:0}
+@media(max-width:600px){.checkout-fields{grid-template-columns:minmax(0,1fr)}.checkout-field.full{grid-column:auto}.checkout-product{align-items:flex-start;flex-direction:column}}
+
 /* diálogos */
 dialog{border:1px solid var(--line);background:var(--surface);color:var(--fg);border-radius:18px;padding:0;width:min(860px,calc(100vw - 32px));max-height:calc(100dvh - 32px)}
 dialog::backdrop{background:rgba(2,3,8,.72);backdrop-filter:blur(3px)}
@@ -213,6 +228,7 @@ dialog::backdrop{background:rgba(2,3,8,.72);backdrop-filter:blur(3px)}
 
 <dialog id="dlgDetail"></dialog>
 <dialog id="dlgForm"></dialog>
+<dialog id="dlgCheckout"></dialog>
 
 <script>
 (() => {
@@ -245,7 +261,8 @@ const waLink = it => "https://wa.me/" + WA_NUMBER + "?text=" + encodeURIComponen
 function buyButtons(it){
   const pay = payLink(it);
   return `<div class="buy-row">
-    ${pay ? `<a class="btn primary buy" href="${esc(pay)}" target="_blank" rel="noopener noreferrer">${ICON.card} Pagar ahora</a>` : ""}
+    <a class="btn primary buy checkout" href="#pedido" data-checkout="${esc(it.id)}">${ICON.card} Comprar y enviar pedido</a>
+    ${pay ? `<a class="btn buy" href="${esc(pay)}" target="_blank" rel="noopener noreferrer">${ICON.card} Pagar ahora</a>` : ""}
     <a class="btn buy wa" href="${esc(waLink(it))}" target="_blank" rel="noopener noreferrer">${ICON.wa} Consultar por WhatsApp</a>
   </div>`;
 }
@@ -418,6 +435,53 @@ function openDetail(item){
   d.showModal();
 }
 
+/* ---------- checkout: datos de envío y pedido por WhatsApp ---------- */
+let checkoutItem = null;
+const SHIPPING_FEE = 5.99;
+const money = n => new Intl.NumberFormat("es-ES",{style:"currency",currency:"EUR"}).format(n);
+function updateCheckoutTotals(){
+  if(!checkoutItem) return;
+  const input=$("#checkoutQty");
+  const qty=Math.max(1,Math.min(99,parseInt(input?.value||"1",10)||1));
+  if(input) input.value=qty;
+  const subtotal=Math.round(Number(checkoutItem.price)*qty*100)/100;
+  $("#checkoutSubtotal").textContent=money(subtotal);
+  $("#checkoutShipping").textContent=money(SHIPPING_FEE);
+  $("#checkoutTotal").textContent=money(Math.round((subtotal+SHIPPING_FEE)*100)/100);
+}
+function openCheckout(item){
+  if(!item){toast("No se ha encontrado el producto.",true);return;}
+  if(!Number.isFinite(Number(item.price))||Number(item.price)<0){toast("Este producto no tiene un precio válido.",true);return;}
+  checkoutItem=item;
+  const d=$("#dlgCheckout");
+  d.innerHTML=`
+    <div class="dlg-head"><h2>Datos de envío y contacto</h2><button type="button" class="icon-btn" data-close aria-label="Cerrar">${ICON.x}</button></div>
+    <form id="checkoutForm">
+      <div class="dlg-body checkout-form">
+        <div class="checkout-product">
+          <div><strong>${esc(item.name)}</strong><small>${esc(item.concentration||"")}${item.ml?" · "+esc(item.ml)+" ml":""} · ${money(Number(item.price))} / unidad</small></div>
+          <div class="checkout-qty"><label for="checkoutQty">Cantidad</label><input id="checkoutQty" name="cantidad" type="number" min="1" max="99" step="1" value="1" required></div>
+        </div>
+        <div class="checkout-fields">
+          <div class="checkout-field full"><label for="checkoutName">NOMBRE Y APELLIDOS *</label><input id="checkoutName" name="nombre" autocomplete="name" required></div>
+          <div class="checkout-field"><label for="checkoutCountry">PAÍS DE DESTINO *</label><input id="checkoutCountry" name="pais" autocomplete="country-name" value="España" required></div>
+          <div class="checkout-field"><label for="checkoutPhone">TELÉFONO MÓVIL / WHATSAPP *</label><input id="checkoutPhone" name="telefono" type="tel" autocomplete="tel" required></div>
+          <div class="checkout-field full"><label for="checkoutAddress">DIRECCIÓN DE ENVÍO COMPLETA *</label><textarea id="checkoutAddress" name="direccion" autocomplete="street-address" required></textarea></div>
+          <div class="checkout-field"><label for="checkoutZip">CÓDIGO POSTAL *</label><input id="checkoutZip" name="cp" autocomplete="postal-code" required></div>
+          <div class="checkout-field"><label for="checkoutCity">CIUDAD / POBLACIÓN *</label><input id="checkoutCity" name="ciudad" autocomplete="address-level2" required></div>
+        </div>
+        <div class="checkout-summary" aria-live="polite">
+          <div class="fila"><span>Subtotal de artículos</span><strong id="checkoutSubtotal">${money(Number(item.price))}</strong></div>
+          <div class="fila"><span>Portes y manipulación refrigerada</span><strong id="checkoutShipping">${money(SHIPPING_FEE)}</strong></div>
+          <div class="fila total"><span>Importe total</span><strong id="checkoutTotal">${money(Number(item.price)+SHIPPING_FEE)}</strong></div>
+        </div>
+        <p class="checkout-help">Al confirmar se abrirá WhatsApp con el pedido preparado. Pulsa Enviar en WhatsApp para remitirlo.</p>
+      </div>
+      <div class="dlg-foot"><button type="button" class="btn" data-close>Cancelar</button><button type="submit" class="btn primary">Confirmar y enviar pedido</button></div>
+    </form>`;
+  d.showModal();updateCheckoutTotals();
+}
+
 /* ---------- formulario ---------- */
 let form = null; // {item, photo:{kind,blob,preview}}
 function openForm(item, askDelete=false){
@@ -509,6 +573,8 @@ function toast(msg, err){ document.querySelector(".toast")?.remove(); const t=do
 const byId = id => state.items.find(i=>i.id===id);
 
 document.addEventListener("click", async e => {
+  const checkoutLink=e.target.closest("a.checkout[data-checkout]");
+  if(checkoutLink){e.preventDefault();e.stopPropagation();openCheckout(byId(checkoutLink.dataset.checkout));return;}
   if(e.target.closest("a.buy")){ e.stopPropagation(); return; } // deja que el enlace se abra sin abrir la ficha
   const close = e.target.closest("[data-close]"); if(close){ close.closest("dialog").close(); return; }
   const chip = e.target.closest(".chip"); if(chip){ state.fam=chip.dataset.fam; render(); return; }
@@ -544,9 +610,36 @@ document.addEventListener("change", async e => {
     catch(err){ toast("No se pudo leer esa imagen.",true); }
   }
   if(e.target.id==="f_family"){ e.target.closest(".form").style.setProperty("--c",famColor(e.target.value)); }
+  if(e.target.id==="checkoutQty"){ updateCheckoutTotals(); }
   if(e.target.id==="sort"){ state.sort=e.target.value; render(); }
 });
-document.addEventListener("submit", e => { if(e.target.id==="pf"){ e.preventDefault(); submitForm(); } });
+document.addEventListener("submit", e => {
+  if(e.target.id==="pf"){e.preventDefault();submitForm();return;}
+  if(e.target.id==="checkoutForm"){
+    e.preventDefault();
+    if(!checkoutItem||!e.target.reportValidity())return;
+    const data=Object.fromEntries(new FormData(e.target).entries());
+    for(const key of ["nombre","pais","telefono","direccion","cp","ciudad"]){
+      data[key]=String(data[key]||"").trim();
+      if(!data[key]){toast("Completa todos los campos obligatorios.",true);return;}
+    }
+    const qty=Math.max(1,Math.min(99,parseInt(data.cantidad||"1",10)||1));
+    const subtotal=Math.round(Number(checkoutItem.price)*qty*100)/100;
+    const total=Math.round((subtotal+SHIPPING_FEE)*100)/100;
+    const message=[
+      "🧬 *PULSAR LABS — NUEVO PEDIDO*","",
+      "*PRODUCTOS*",`• ${checkoutItem.name}${checkoutItem.ml?" ("+checkoutItem.ml+" ml)":""} × ${qty} — ${money(subtotal)}`,"",
+      "*DATOS DE ENVÍO Y CONTACTO*",`Nombre y apellidos: ${data.nombre}`,`País de destino: ${data.pais}`,
+      `Teléfono móvil / WhatsApp: ${data.telefono}`,`Dirección de envío: ${data.direccion}`,
+      `Código postal: ${data.cp}`,`Ciudad / población: ${data.ciudad}`,"",
+      "*RESUMEN DEL PEDIDO*",`Subtotal de artículos: ${money(subtotal)}`,
+      `Portes y manipulación refrigerada: ${money(SHIPPING_FEE)}`,`*IMPORTE TOTAL: ${money(total)}*`
+    ].join("\\n");
+    const url="https://wa.me/"+WA_NUMBER+"?text="+encodeURIComponent(message);
+    window.open(url,"_blank","noopener,noreferrer");
+    $("#dlgCheckout").close();
+  }
+});
 $("#q").addEventListener("input", e => { state.q=e.target.value; render(); });
 for(const id of ["tagline","intro"]){
   const el=$("#"+id);
