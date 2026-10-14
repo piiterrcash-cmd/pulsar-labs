@@ -233,8 +233,7 @@ dialog::backdrop{background:rgba(2,3,8,.72);backdrop-filter:blur(3px)}
         <option value="name">Nombre A–Z</option>
       </select>
     </div>
-    <div class="chips" id="chips"><button class="chip" data-fam="" aria-pressed="true">Todas</button><button class="chip" style="--c:#C08A4E" data-fam="Amaderada" aria-pressed="false"><i></i>Amaderada</button><button class="chip" style="--c:#E07AB0" data-fam="Floral" aria-pressed="false"><i></i>Floral</button><button class="chip" style="--c:#D9A23A" data-fam="Oriental" aria-pressed="false"><i></i>Oriental</button><button class="chip" style="--c:#E6D24A" data-fam="Cítrica" aria-pressed="false"><i></i>Cítrica</button><button class="chip" style="--c:#5CC48A" data-fam="Aromática" aria-pressed="false"><i></i>Aromática</button><button class="chip" style="--c:#3FB8E0" data-fam="Acuática" aria-pressed="false"><i></i>Acuática</button><button class="chip" style="--c:#B9785C" data-fam="Gourmand" aria-pressed="false"><i></i>Gourmand</button><button class="chip" style="--c:#8F9A5A" data-fam="Chipre" aria-pressed="false"><i></i>Chipre</button></div>
-    <div id="notice"></div>
+        <div id="notice"></div>
     <div class="grid" id="grid">
     <article class="card" style="--c:#C08A4E" data-id="7hlrzdf6k40sjgf3vvf4" tabindex="0" role="button" aria-label="Ver N+">
       
@@ -418,7 +417,7 @@ const LS_KEY = "pulsar-perfumes-v1";
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const eur = n => (n === "" || n == null || isNaN(n)) ? "—" : new Intl.NumberFormat("es-ES",{style:"currency",currency:"EUR",maximumFractionDigits: Number(n)%1 ? 2 : 0}).format(Number(n));
-const famColor = f => FAMILIES[f] || "#8C95AB";
+const famColor = f => "#2452F2";
 const splitNotes = s => String(s||"").split(/[,;·]/).map(x=>x.trim()).filter(Boolean);
 const photoSrc = p => !p ? "" : (p.startsWith("data:") ? p : "/_blob/" + p);
 const ICON = {
@@ -526,10 +525,7 @@ function render(){
   put("#statFam", state.mode==="loading" ? "–" : fams.size);
   put("#statFrom", prices.length ? eur(Math.min(...prices)) : "–");
 
-  // chips
-  const present = Object.keys(FAMILIES).filter(f=>fams.has(f));
-  $("#chips").innerHTML = `<button class="chip" data-fam="" aria-pressed="${!state.fam}">Todas</button>` +
-    present.map(f=>`<button class="chip" style="--c:${famColor(f)}" data-fam="${esc(f)}" aria-pressed="${state.fam===f}"><i></i>${esc(f)}</button>`).join("");
+  if($("#chips")) $("#chips").remove();
 
   if($("#notice")) $("#notice").innerHTML = state.mode==="local" && state.editable
     ? `<div class="notice">Los cambios se guardan solo en este navegador. Ábrela desde Claude con tu cuenta para que se guarden para todos.</div>` : "";
@@ -551,9 +547,8 @@ function render(){
         <button class="icon-btn del" data-act="del" data-id="${esc(it.id)}" aria-label="Quitar ${esc(it.name)}">${ICON.del}</button></div>` : ""}
       ${shot(it)}
       <div class="info">
-        <span class="fam">${esc(it.family||"Sin familia")}</span>
         <h3 class="name">${esc(it.name)}</h3>
-        <div class="meta"><span>${esc(abbr(it.concentration))}${it.size?` · ${esc(it.size)}`:""}</span><span class="price">${eur(it.price)}</span></div>
+        <div class="meta"><span>${esc(it.size||"")}</span><span class="price">${eur(it.price)}</span></div>
         ${buyButtons(it)}
       </div>
     </article>`).join("");
@@ -564,19 +559,16 @@ function abbr(c){ return {"Extrait de Parfum":"Extrait","Eau de Parfum":"EDP","E
 /* ---------- detalle ---------- */
 function openDetail(item){
   const d=$("#dlgDetail");
-  const tiers=[["Salida",item.top],["Corazón",item.heart],["Fondo",item.base]].filter(t=>splitNotes(t[1]).length);
   d.innerHTML = `
-    <div class="dlg-head"><h2>${esc(item.family||"Perfume")}</h2><button class="icon-btn" data-close aria-label="Cerrar">${ICON.x}</button></div>
+    <div class="dlg-head"><h2>Ficha del producto</h2><button class="icon-btn" data-close aria-label="Cerrar">${ICON.x}</button></div>
     <div class="dlg-body"><div class="detail" style="--c:${famColor(item.family)}">
       ${shot(item)}
       <div>
-        <span class="fam">${esc(item.family||"")}</span>
         <h3>${esc(item.name)}</h3>
-        <div class="sub">${esc(item.concentration||"")}${item.size?` · ${esc(item.size)}`:""}</div>
+        <div class="sub">${esc(item.size||"")}</div>
         <div class="big-price">${eur(item.price)}</div>
         <div class="buy-detail">${buyButtons(item)}</div>
-        ${item.description?`<p class="desc">${esc(item.description)}</p>`:""}
-        ${tiers.length?`<div class="pyramid">${tiers.map(([k,v])=>`<div class="tier"><span>${k}</span><div class="notes">${splitNotes(v).map(n=>`<span class="note">${esc(n)}</span>`).join("")}</div></div>`).join("")}</div>`:""}
+        ${item.description && item.description.trim()!==String(item.size||"").trim()?`<p class="desc">${esc(item.description)}</p>`:""}
       </div>
     </div></div>
     ${state.editing?`<div class="dlg-foot"><button class="btn" data-act="edit" data-id="${esc(item.id)}">${ICON.edit} Editar</button></div>`:""}`;
@@ -589,7 +581,8 @@ const SHIPPING_FEE = 5.99;
 /* códigos de descuento para clientes VIP */
 const VIP_CODES = { "PULSARVIP15": 0.15, "PULSARVIP25": 0.25 };
 let vip = { code:"", rate:0, error:"" };
-const vipAmount = sub => Math.round(sub * vip.rate * 100) / 100;
+const vipTop = () => [...cart.values()].reduce((m,r)=>Math.max(m, Number(r.item.price)||0), 0);
+const vipAmount = () => Math.round(vipTop() * vip.rate * 100) / 100;
 function applyVip(raw){
   const code = String(raw||"").trim().toUpperCase();
   if(!code){ vip = {code:"", rate:0, error:""}; }
@@ -618,7 +611,7 @@ function renderCart(){
   const d=$("#dlgCheckout");
   const rows=[...cart.values()];
   const subtotal=cartSubtotal();
-  const desc=vipAmount(subtotal);
+  const desc=vipAmount();
   const total=Math.round((subtotal-desc+(rows.length?SHIPPING_FEE:0))*100)/100;
   const lines=rows.length?rows.map(({item,qty})=>`
     <div class="cart-line">
@@ -635,7 +628,7 @@ function renderCart(){
         ${rows.length?`
         <div class="checkout-summary" aria-live="polite">
           <div class="fila"><span>Subtotal de artículos</span><strong>${money(subtotal)}</strong></div>
-          ${vip.rate?`<div class="fila descuento"><span>Descuento VIP ${esc(vip.code)} (−${Math.round(vip.rate*100)}%)</span><strong>−${money(desc)}</strong></div>`:""}
+          ${vip.rate?`<div class="fila descuento"><span>Descuento VIP ${esc(vip.code)} (−${Math.round(vip.rate*100)}% en 1 artículo)</span><strong>−${money(desc)}</strong></div>`:""}
           <div class="fila"><span>Portes y manipulación refrigerada</span><strong>${money(SHIPPING_FEE)}</strong></div>
           <div class="fila total"><span>Importe total</span><strong>${money(total)}</strong></div>
         </div>
@@ -644,7 +637,7 @@ function renderCart(){
             <input id="codeInput" type="text" placeholder="¿Tienes código VIP?" value="${esc(vip.code)}" autocomplete="off" aria-label="Código de descuento">
             <button type="button" class="btn" id="applyCode">${vip.rate?"Quitar":"Aplicar"}</button>
           </div>
-          ${vip.rate?`<p class="vip-ok">Código ${esc(vip.code)} aplicado: −${Math.round(vip.rate*100)}% en los artículos.</p>`:""}
+          ${vip.rate?`<p class="vip-ok">Código ${esc(vip.code)} aplicado: −${Math.round(vip.rate*100)}% sobre el artículo más caro (${money(vipTop())}).</p>`:""}
           ${vip.error?`<p class="vip-bad">${esc(vip.error)}</p>`:""}
         </div>
         <div class="checkout-fields">
@@ -683,13 +676,8 @@ function openForm(item, askDelete=false){
       </div>
       <div class="fields">
         <div class="field full"><label for="f_name">Nombre</label><input id="f_name" required maxlength="80" value="${esc(it.name)}" placeholder="Ej. Nébula Oud"></div>
-        <div class="field"><label for="f_family">Familia olfativa</label><select id="f_family">${Object.keys(FAMILIES).map(f=>`<option ${f===it.family?"selected":""}>${f}</option>`).join("")}</select></div>
-        <div class="field"><label for="f_conc">Concentración</label><select id="f_conc">${CONC.map(c=>`<option ${c===it.concentration?"selected":""}>${c}</option>`).join("")}</select></div>
         <div class="field"><label for="f_ml">Tamaño</label><input id="f_ml" type="text" maxlength="20" placeholder="10MG" value="${esc(it.size)}"></div>
         <div class="field"><label for="f_price">Precio (€)</label><input id="f_price" type="number" min="0" step="0.01" inputmode="decimal" value="${esc(it.price)}"></div>
-        <div class="field full"><label for="f_top">Notas de salida</label><input id="f_top" value="${esc(it.top)}" placeholder="Bergamota, Pimienta rosa"></div>
-        <div class="field full"><label for="f_heart">Notas de corazón</label><input id="f_heart" value="${esc(it.heart)}" placeholder="Rosa, Iris"></div>
-        <div class="field full"><label for="f_base">Notas de fondo</label><input id="f_base" value="${esc(it.base)}" placeholder="Vainilla, Sándalo"><small>Separa las notas con comas.</small></div>
         <div class="field full"><label for="f_desc">Descripción</label><textarea id="f_desc" maxlength="600">${esc(it.description)}</textarea></div>
       </div>
     </div>
@@ -726,9 +714,9 @@ async function submitForm(){
     let photo = old?.photo || "";
     if(form.photo.kind==="new") photo = await storePhoto(form.photo.blob);
     else if(form.photo.kind==="none") photo = "";
-    const data = { name, family:v("f_family"), concentration:v("f_conc"),
+    const data = { name, family:old?.family||"", concentration:old?.concentration||"",
       size: v("f_ml"), price: v("f_price")===""?"":Number(v("f_price")),
-      top:v("f_top"), heart:v("f_heart"), base:v("f_base"), description:v("f_desc"),
+      top:old?.top||"", heart:old?.heart||"", base:old?.base||"", description:v("f_desc"),
       photo, createdAt: old?.createdAt || Date.now() };
     await savePerfume(old?.id, data);
     if(state.mode==="remote" && old?.photo && old.photo!==photo && assets) assets.delete(old.photo).catch(()=>{});
@@ -804,7 +792,6 @@ document.addEventListener("change", async e => {
       form.photo={kind:"new",blob,preview:URL.createObjectURL(blob)}; paintPreview(); }
     catch(err){ toast("No se pudo leer esa imagen.",true); }
   }
-  if(e.target.id==="f_family"){ e.target.closest(".form").style.setProperty("--c",famColor(e.target.value)); }
   if(e.target.id==="sort"){ state.sort=e.target.value; render(); }
 });
 document.addEventListener("submit", e => {
@@ -819,7 +806,7 @@ document.addEventListener("submit", e => {
       data[key]=String(data[key]||"").trim();
       if(!data[key]){toast("Completa todos los campos obligatorios.",true);return;}
     }
-    const subtotal=cartSubtotal(), desc=vipAmount(subtotal);
+    const subtotal=cartSubtotal(), desc=vipAmount();
     const total=Math.round((subtotal-desc+SHIPPING_FEE)*100)/100;
     const message=[
       "PULSAR LABS — NUEVO PEDIDO","",
@@ -836,7 +823,7 @@ document.addEventListener("submit", e => {
       "",
       "RESUMEN DEL PEDIDO",
       "Subtotal de artículos: "+money(subtotal),
-      ...(vip.rate?["Descuento VIP "+vip.code+" (-"+Math.round(vip.rate*100)+"%): -"+money(desc)]:[]),
+      ...(vip.rate?["Descuento VIP "+vip.code+" (-"+Math.round(vip.rate*100)+"% en 1 artículo): -"+money(desc)]:[]),
       "Portes y manipulación refrigerada: "+money(SHIPPING_FEE),
       "IMPORTE TOTAL: "+money(total)
     ].join("\n");
